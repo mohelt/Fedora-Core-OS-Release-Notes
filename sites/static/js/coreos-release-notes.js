@@ -29,6 +29,24 @@ function timestampToPrettyString(date) {
   return `${month} ${day}, ${year}`;
 }
 
+async function getReleaseNotes ()  {
+  return await fetch(
+    "https://raw.githubusercontent.com/travier/fedora-coreos-tracker/main/docs/testing.json" 
+    
+  ).then( (response) => {
+    if (!response.ok) {
+      throw new Error(response.json().message);
+    }
+    return response.json();
+  })
+   .catch((error) => {
+     throw error
+   });
+  
+  
+};
+const ReleaseNoteData = getReleaseNotes();
+console.log(ReleaseNoteData[0])
 function getBaseUrl(stream, developer) {
   return stream != "developer"
     ? `${baseProdUrl}/${stream}`
