@@ -340,6 +340,7 @@ function fetchBuildCommitMeta(base, build, basearch, legacy) {
     .then(response => response.ok ? response.json() : {});
 }
 
+
 var coreos_release_notes = new Vue({
   el: '#coreos-release-notes',
   created: function () { this.refreshBuilds() },
