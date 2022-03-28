@@ -59,11 +59,11 @@ let issuesStableTemp = ReleaseNoteStable.then((data) => {
 });
 let issuesTestingTemp = ReleaseNoteTesting.then((data) => {
   issuesTestingTemp = data;
-  issuesTestingPromiseList.push(issuesStableTemp);
+  issuesTestingPromiseList.push(issuesTestingTemp);
 });
 let issuesNextTemp = ReleaseNoteNext.then((data) => {
-  issuesTestingTemp = data;
-  issuesNextPromiseList.push(issuesStableTemp);
+  issuesNextTemp = data;
+  issuesNextPromiseList.push(issuesNextTemp);
 });
 function getBaseUrl(stream, developer) {
   return stream != "developer"
@@ -523,16 +523,16 @@ var coreos_release_notes = new Vue({
                       importantPkgsElements.push(h('span', { class: "mr-2 badge badge-pill badge-light" }, pkg[2]));
                     });
           // Summary of pkglist and pkgdiffs with expand buttons
-          let issuesRelease = [];
+          
           switch (searchParams.get('stream')) {
             case 'stable':
-              issuesRelease = h('p', {}, `Issues resolved: ${issuesToPrettyString(issuesStable,build.id)}`);
+            issuesRelease = h('p', {}, `Issues resolved: ${issuesToPrettyString(issuesStable,build.id)}`);
               break;
             case 'testing':
-              issuesRelease = h('p', {}, `Issues resolved: ${issuesToPrettyString(issuesTesting,build.id)}`);
+            issuesRelease = h('p', {}, `Issues resolved: ${issuesToPrettyString(issuesTesting,build.id)}`);
               break;
             case 'next':
-              issuesRelease = h('p', {}, `Issues resolved: ${issuesToPrettyString(issuesNext,build.id)}`);
+            issuesRelease = h('p', {}, `Issues resolved: ${issuesToPrettyString(issuesNext,build.id)}`);
               break;
             default:
               issuesRelease = h('p', {}, `Issues resolved: ${issuesToPrettyString(issuesStable,build.id)}`);
