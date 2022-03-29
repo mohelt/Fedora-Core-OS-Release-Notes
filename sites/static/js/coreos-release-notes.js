@@ -28,21 +28,7 @@ function timestampToPrettyString(date) {
 
   return `${month} ${day}, ${year}`;
 }
-function issuesToPrettyString(issues,buildid) {
-  s="";
-  var i=0;
-  var j =0;
 
-  for(i=0;i<issues.length;i++){
-    if(issues[i].release==buildid){
-      specificIssue= issues[i].issues;
-      for(j=0;j<specificIssue.length;j++){
-        s=s+specificIssue[j].id + " " +specificIssue[j].title +"\n";
-      }
-    }
-  }
-  return s;
-}
 let issuesStablePromiseList = [];
 let issuesTestingPromiseList = [];
 let issuesNextPromiseList = [];
@@ -514,29 +500,42 @@ var coreos_release_notes = new Vue({
           // Right pane consists of detailed package information
           let date = h('p', {}, `Release Date: ${timestampToPrettyString(build.meta[eachArch]['coreos-assembler.build-timestamp'])}`);
           // List of important packages and versions
-           // TODO: naive implementation is a list of subjects under each component header
-           // in the future add buttons for detailed information of each note item
-                    // List of important packages and versions
-                    let importantPkgsElements = [];
-                    build.commitmeta[eachArch].importantPkgs.forEach((pkg, _) => {
-                      importantPkgsElements.push(pkg[0]);
-                      importantPkgsElements.push(h('span', { class: "mr-2 badge badge-pill badge-light" }, pkg[2]));
-                    });
-          // Summary of pkglist and pkgdiffs with expand buttons
-          
+          // TODO: naive implementation is a list of subjects under each component header
+          // in the future add buttons for detailed information of each note item
+          // List of important packages and versions
+          let importantPkgsElements = [];
+          build.commitmeta[eachArch].importantPkgs.forEach((pkg, _) => {
+            importantPkgsElements.push(pkg[0]);
+            importantPkgsElements.push(h('span', { class: "mr-2 badge badge-pill badge-light" }, pkg[2]));
+          });
+          // Summary of pkglist and pkgdiffs with expand buttons      var i = 0;
           switch (searchParams.get('stream')) {
             case 'stable':
-            issuesRelease = h('p', {}, `Issues resolved: ${issuesToPrettyString(issuesStable,build.id)}`);
+              issues = issuesStable;
               break;
             case 'testing':
-            issuesRelease = h('p', {}, `Issues resolved: ${issuesToPrettyString(issuesTesting,build.id)}`);
+              issues = issuesTesting;
               break;
             case 'next':
-            issuesRelease = h('p', {}, `Issues resolved: ${issuesToPrettyString(issuesNext,build.id)}`);
+              issues = issuesNext;
               break;
             default:
-              issuesRelease = h('p', {}, `Issues resolved: ${issuesToPrettyString(issuesStable,build.id)}`);
+              issues = issuesStable;
           }
+          let releaseNotesElements = [];
+          let i = 0;
+          let j = 0;
+          for (i; i < issues.length; i++) {
+            if (issues[i].release == build.id) {
+              specificIssue = issues[i].issues;
+              let componentNoteItems = specificIssue;
+              let releaseNotesItems = h('ul', {}, componentNoteItems.map(noteItem => h('li', {},noteItem.id + ": " + noteItem.title)));
+              releaseNotesElements.push(releaseNotesItems);
+            }
+          }
+
+
+
           let pkgSummaryElements = []
             .concat(`${build.commitmeta[eachArch]['rpmostree.rpmdb.pkglist'].length} packages (`)
             .concat(
@@ -744,7 +743,7 @@ var coreos_release_notes = new Vue({
           }
           let downgradedPkgsElements = h('div', { attrs: { hidden: true } }, [downgradedPkgsHeading, h('ul', {}, downgradedPkgsElementsList)]);
           let rightPaneData = h('div', { attrs: { id: build.id + eachArch }, class: "col-lg-10 border-bottom mb-5 pb-4" },
-            [date,issuesRelease ,importantPkgsElements, pkgSummaryDiv, totalPkgsElements, addedPkgsElements, removedPkgsElements, upgradedPkgsElements, downgradedPkgsElements]);
+            [date, releaseNotesElements, importantPkgsElements, pkgSummaryDiv, totalPkgsElements, addedPkgsElements, removedPkgsElements, upgradedPkgsElements, downgradedPkgsElements]);
 
           // Hiding the information cards of the unselected architectures
           if (eachArch != selectedArch)
