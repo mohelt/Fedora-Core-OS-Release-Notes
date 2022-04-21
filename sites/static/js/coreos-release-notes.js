@@ -33,7 +33,7 @@ let issuesStablePromiseList = [];
 let issuesTestingPromiseList = [];
 let issuesNextPromiseList = [];
 function getReleaseNotes(releaseStream) {
-  return fetch(`https://raw.githubusercontent.com/travier/fedora-coreos-tracker/main/docs/${releaseStream}.json`)
+  return fetch(`https://raw.githubusercontent.com/travier/fedora-coreos-streams/release-notes-testing/release-notes/${releaseStream}.json`)
     .then(response => response.ok ? response.json() : {});
 }
 const ReleaseNoteStable = getReleaseNotes("stable");
@@ -499,6 +499,8 @@ var coreos_release_notes = new Vue({
         build.arches.forEach(eachArch => {
           // Right pane consists of detailed package information
           let date = h('p', {}, `Release Date: ${timestampToPrettyString(build.meta[eachArch]['coreos-assembler.build-timestamp'])}`);
+          
+          let releaseNoteTitle=h('h6', {}, `Issues fixed:`);
           // List of important packages and versions
           // TODO: naive implementation is a list of subjects under each component header
           // in the future add buttons for detailed information of each note item
@@ -525,12 +527,17 @@ var coreos_release_notes = new Vue({
           let releaseNotesElements = [];
           let i = 0;
           let j = 0;
-          for (i; i < issues.length; i++) {
-            if (issues[i].release == build.id) {
-              specificIssue = issues[i].issues;
+          let countOfReleases=Object.keys(issues.releases).length;
+           for (i; i < countOfReleases; i++) {
+            let keyOfIssue =Object.keys(issues.releases)[i]
+            if (keyOfIssue== build.id) {
+              specificIssue = issues.releases[keyOfIssue].issues;
               let componentNoteItems = specificIssue;
-              let releaseNotesItems = h('ul', {}, componentNoteItems.map(noteItem => h('li', {},noteItem.id + ": " + noteItem.title)));
-              releaseNotesElements.push(releaseNotesItems);
+              for(j=0;j<componentNoteItems.length;j++){
+                let releaseNotesLinkAndText=h('a', {attrs: {href: componentNoteItems[j].url},},"•"+componentNoteItems[j].text);
+                releaseNotesElements.push(releaseNotesLinkAndText);
+                releaseNotesElements.push(h('br'));
+              }
             }
           }
 
@@ -743,7 +750,7 @@ var coreos_release_notes = new Vue({
           }
           let downgradedPkgsElements = h('div', { attrs: { hidden: true } }, [downgradedPkgsHeading, h('ul', {}, downgradedPkgsElementsList)]);
           let rightPaneData = h('div', { attrs: { id: build.id + eachArch }, class: "col-lg-10 border-bottom mb-5 pb-4" },
-            [date, releaseNotesElements, importantPkgsElements, pkgSummaryDiv, totalPkgsElements, addedPkgsElements, removedPkgsElements, upgradedPkgsElements, downgradedPkgsElements]);
+            [date,releaseNoteTitle, releaseNotesElements, importantPkgsElements, pkgSummaryDiv, totalPkgsElements, addedPkgsElements, removedPkgsElements, upgradedPkgsElements, downgradedPkgsElements]);
 
           // Hiding the information cards of the unselected architectures
           if (eachArch != selectedArch)
