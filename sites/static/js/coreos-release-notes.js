@@ -13,7 +13,7 @@
 
 const baseProdUrl = 'https://builds.coreos.fedoraproject.org/prod/streams'
 const baseDevelUrl = 'https://builds.coreos.fedoraproject.org/devel/streams'
-
+const baseReleaseNoteUrl = 'https://builds.coreos.fedoraproject.org/release-notes'
 const initialBuildsShown = 5;
 
 // pkgdiff enum to str
@@ -29,28 +29,11 @@ function timestampToPrettyString(date) {
   return `${month} ${day}, ${year}`;
 }
 
-let issuesStablePromiseList = [];
-let issuesTestingPromiseList = [];
-let issuesNextPromiseList = [];
 function getReleaseNotes(releaseStream) {
-  return fetch(`https://raw.githubusercontent.com/travier/fedora-coreos-streams/release-notes-testing/release-notes/${releaseStream}.json`)
+  return fetch(`${baseReleaseNoteUrl}/${releaseStream}.json`)
     .then(response => response.ok ? response.json() : {});
 }
-const ReleaseNoteStable = getReleaseNotes("stable");
-const ReleaseNoteTesting = getReleaseNotes("testing");
-const ReleaseNoteNext = getReleaseNotes("next");
-let issuesStableTemp = ReleaseNoteStable.then((data) => {
-  issuesStableTemp = data;
-  issuesStablePromiseList.push(issuesStableTemp);
-});
-let issuesTestingTemp = ReleaseNoteTesting.then((data) => {
-  issuesTestingTemp = data;
-  issuesTestingPromiseList.push(issuesTestingTemp);
-});
-let issuesNextTemp = ReleaseNoteNext.then((data) => {
-  issuesNextTemp = data;
-  issuesNextPromiseList.push(issuesNextTemp);
-});
+console.log();
 function getBaseUrl(stream, developer) {
   return stream != "developer"
     ? `${baseProdUrl}/${stream}`
@@ -368,9 +351,7 @@ var coreos_release_notes = new Vue({
     // list of unshown {id, arches, meta, commitmeta} build objects
     unshown_builds: [],
     // toggles "Loading..."
-    loading: true,
-    //creating variable for issues stable
-    issuesStable: []
+    loading: true
   },
   watch: {
     stream: function () {
@@ -490,17 +471,14 @@ var coreos_release_notes = new Vue({
             ])
           ]),
         ]);
-        issuesStable = issuesStablePromiseList[0];
-        issuesTesting = issuesTestingPromiseList[0];
-        issuesNext = issuesNextPromiseList[0];
         let leftPane = h('div', { class: "col-lg-2" }, [headingBuildId, archDropdown]);
         //Adding the information for all arches to rightPane but only showing the card for the selected arch in dropdown
         let rightPane = [];
         build.arches.forEach(eachArch => {
           // Right pane consists of detailed package information
           let date = h('p', {}, `Release Date: ${timestampToPrettyString(build.meta[eachArch]['coreos-assembler.build-timestamp'])}`);
-          
-          let releaseNoteTitle=h('h6', {}, `Issues fixed:`);
+
+          let releaseNoteTitle = h('h6', {}, `Issues fixed:`);
           // List of important packages and versions
           // TODO: naive implementation is a list of subjects under each component header
           // in the future add buttons for detailed information of each note item
@@ -510,34 +488,58 @@ var coreos_release_notes = new Vue({
             importantPkgsElements.push(pkg[0]);
             importantPkgsElements.push(h('span', { class: "mr-2 badge badge-pill badge-light" }, pkg[2]));
           });
+          let issuesStablePromiseList = [];
+          let issuesTestingPromiseList = [];
+          let issuesNextPromiseList = [];
+          let issues = [];
           // Summary of pkglist and pkgdiffs with expand buttons      var i = 0;
           switch (searchParams.get('stream')) {
             case 'stable':
+              let releaseNoteStable = getReleaseNotes("stable");
+              let issuesStableTemp = releaseNoteStable.then((data) => {
+                issuesStableTemp = data;
+                issuesStablePromiseList.push(issuesStableTemp);
+              });
+              issuesStable = issuesStablePromiseList[0];
               issues = issuesStable;
               break;
             case 'testing':
+              let releaseNoteTesting = getReleaseNotes("testing");
+              let issuesTestingTemp = releaseNoteTesting.then((data) => {
+                issuesTestingTemp = data;
+                issuesTestingPromiseList.push(issuesTestingTemp);
+              });
+              issuesTesting = issuesTestingPromiseList[0];
               issues = issuesTesting;
               break;
             case 'next':
+              let releaseNoteNext = getReleaseNotes("next");
+              let issuesNextTemp = releaseNoteNext.then((data) => {
+                issuesNextTemp = data;
+                issuesNextPromiseList.push(issuesNextTemp);
+              });
+              issuesNext = issuesNextPromiseList[0];
               issues = issuesNext;
               break;
             default:
-              issues = issuesStable;
           }
+          console.log(issues);
           let releaseNotesElements = [];
           let i = 0;
           let j = 0;
-          let countOfReleases=Object.keys(issues.releases).length;
-           for (i; i < countOfReleases; i++) {
-            let keyOfIssue =Object.keys(issues.releases)[i]
-            if (keyOfIssue== build.id) {
+          let countOfReleases = Object.keys(issues.releases).length;
+          for (i; i < countOfReleases; i++) {
+            let keyOfIssue = Object.keys(issues.releases)[i]
+            if (keyOfIssue == build.id) {
               specificIssue = issues.releases[keyOfIssue].issues;
               let componentNoteItems = specificIssue;
-              for(j=0;j<componentNoteItems.length;j++){
-                let releaseNotesLinkAndText=h('a', {attrs: {href: componentNoteItems[j].url},},"•"+componentNoteItems[j].text);
+              for (j = 0; j < componentNoteItems.length; j++) {
+                let releaseNotesLinkAndText = h('a', { attrs: { href: componentNoteItems[j].url }, }, "•" + componentNoteItems[j].text);
                 releaseNotesElements.push(releaseNotesLinkAndText);
                 releaseNotesElements.push(h('br'));
               }
+
+              releaseNotesElements.push(h('br'));
             }
           }
 
@@ -750,7 +752,7 @@ var coreos_release_notes = new Vue({
           }
           let downgradedPkgsElements = h('div', { attrs: { hidden: true } }, [downgradedPkgsHeading, h('ul', {}, downgradedPkgsElementsList)]);
           let rightPaneData = h('div', { attrs: { id: build.id + eachArch }, class: "col-lg-10 border-bottom mb-5 pb-4" },
-            [date,releaseNoteTitle, releaseNotesElements, importantPkgsElements, pkgSummaryDiv, totalPkgsElements, addedPkgsElements, removedPkgsElements, upgradedPkgsElements, downgradedPkgsElements]);
+            [date, releaseNoteTitle, releaseNotesElements, importantPkgsElements, pkgSummaryDiv, totalPkgsElements, addedPkgsElements, removedPkgsElements, upgradedPkgsElements, downgradedPkgsElements]);
 
           // Hiding the information cards of the unselected architectures
           if (eachArch != selectedArch)
